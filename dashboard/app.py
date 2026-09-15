@@ -14,20 +14,16 @@ load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env
 # --- Real AI client (sync, safe to use in threads) ---
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src'))
 _AI_CLIENT = None
-_AI_MODEL = os.getenv("GITHUB_MODEL_NAME", "gpt-4o-mini")
+_AI_MODEL = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
 try:
-    from azure.ai.inference import ChatCompletionsClient
-    from azure.ai.inference.models import SystemMessage, UserMessage
-    from azure.core.credentials import AzureKeyCredential
-    _github_token = os.getenv("GITHUB_TOKEN", "")
-    if _github_token:
-        _AI_CLIENT = ChatCompletionsClient(
-            endpoint="https://models.inference.ai.azure.com",
-            credential=AzureKeyCredential(_github_token),
-        )
-        print(f"[Dashboard] ✅ GitHub Models AI client ready ({_AI_MODEL})")
+    import google.generativeai as genai
+    _gemini_key = os.getenv("GEMINI_API_KEY", "")
+    if _gemini_key:
+        genai.configure(api_key=_gemini_key)
+        _AI_CLIENT = genai.GenerativeModel(_AI_MODEL)
+        print(f"[Dashboard] ✅ Google Gemini AI client ready ({_AI_MODEL})")
     else:
-        print("[Dashboard] ⚠️  GITHUB_TOKEN not set — AI unavailable")
+        print("[Dashboard] ⚠️  GEMINI_API_KEY not set — AI unavailable")
 except Exception as _e:
     print(f"[Dashboard] ⚠️  AI client init failed: {_e}")
 
@@ -545,7 +541,7 @@ def trigger_demo_incident(scenario_type):
                 update_agent_status('detection', 'idle', {'incidents_detected': agent_status['detection']['incidents_detected'] + 1})
                 update_incident_status(incident['id'], 'diagnosing', int(mttr * 0.1))
 
-                # ── DIAGNOSIS (real GitHub Models AI call, sync) ───────────────
+                # ── DIAGNOSIS (real Google Gemini AI call, sync) ───────────────
                 update_agent_status('diagnosis', 'working')
                 diagnosis_result = None
 
@@ -562,18 +558,16 @@ def trigger_demo_incident(scenario_type):
                         '{"type":"snake_case","description":"one sentence","affected_component":"name",'
                         '"evidence":["point1","point2"]}'
                     )
-                    add_log('Diagnosis', f'🤖 Calling GitHub Models ({_AI_MODEL}) for root cause analysis...')
+                    add_log('Diagnosis', f'🤖 Calling Google Gemini ({_AI_MODEL}) for root cause analysis...')
                     try:
-                        resp = _AI_CLIENT.complete(
-                            model=_AI_MODEL,
-                            messages=[
-                                SystemMessage(content="You are an expert SRE. Respond with ONLY valid JSON, no markdown."),
-                                UserMessage(content=prompt),
-                            ],
-                            temperature=0.2,
-                            max_tokens=300,
+                        resp = _AI_CLIENT.generate_content(
+                            prompt,
+                            generation_config=genai.types.GenerationConfig(
+                                temperature=0.2,
+                                max_output_tokens=300,
+                            ),
                         )
-                        raw = resp.choices[0].message.content.strip()
+                        raw = resp.text.strip()
                         if raw.startswith("```"):
                             raw = raw.split("```")[1]
                             if raw.startswith("json"):

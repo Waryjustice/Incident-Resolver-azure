@@ -76,7 +76,7 @@ Resolution Agent ──[resolution_complete]──> Communication Agent
 
 ## Technology Stack
 
-### Core Technologies (Required by Hackathon)
+### Core Technologies
 - **GitHub Models API (gpt-4o-mini)**: AI diagnosis via `azure-ai-inference` SDK — uses GITHUB_TOKEN, no Foundry required
 - **Microsoft Agent Framework**: Multi-agent orchestration
 - **Azure MCP**: Inter-agent communication protocol

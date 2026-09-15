@@ -1,34 +1,29 @@
-# Azure Incident Resolver
+# ML Subject Submission
 
-#Made by Shaurya Singh
+Made by Shaurya Singh, Pankhuri Shekhar, Neelmani Sharan, and Mukund Mishra
 
-> **Sleep soundly. Your AI SRE team is always on call.**
+> **Sound sleep, AI-driven solutions for production incidents.**
 
 Multi-agent AI system that automatically detects, diagnoses, and resolves production incidents in Azure environments. Reduces MTTR from 45 minutes to under 5 minutes.
 
 ---
 
-## 🏆 Microsoft AI Dev Days Hackathon 2026
+## 📖 Machine Learning Project Submission
 
-**Competing for:**
-- 🥇 Grand Prize - Build AI Applications & Agents using Microsoft AI Platform
-- 🥇 Grand Prize - Automate and Optimize Software Delivery - Agentic DevOps
-- 🏅 Best Enterprise Solution
-- 🏅 Best Multi-Agent System
-- 🏅 Best Azure Integration
+ML subject project involving multi-agent AI system for incident detection and resolution in production environments.
 
 ---
 
 ## 📖 Overview
 
-Azure Incident Resolver is a **multi-agent AI system** that automates the complete incident response lifecycle for Azure production environments.
+This ML subject project implements a **multi-agent AI system** for automating incident response in production environments.
 
-**Four specialized AI agents** collaborate through **Azure MCP** to:
-- 🔍 **Detect** anomalies in real-time using Azure Monitor
-- 🧠 **Diagnose** root causes with 80%+ confidence using AI analysis
+Four AI agents collaborate to:
+- 🔍 **Detect** anomalies in real-time using monitoring data
+- 🧠 **Diagnose** root causes with AI analysis
 - 🔧 **Resolve** issues automatically (scale databases, restart services, implement circuit breakers)
-- 💬 **Communicate** via Teams notifications and auto-generate post-mortems
-- 🤖 **Fix permanently** by creating GitHub PRs with AI-generated code fixes
+- 💬 **Communicate** via notifications and auto-generate post-mortems
+- 🤖 **Fix permanently** by creating code fixes
 
 ### Impact
 - ⚡ **MTTR Reduction**: 45 minutes → 5 minutes (89% improvement)
@@ -40,15 +35,15 @@ Azure Incident Resolver is a **multi-agent AI system** that automates the comple
 
 ## 🎯 The Problem
 
-Large enterprises lose **millions in revenue** during production incidents due to:
+Large enterprises face challenges during production incidents due to:
 - ❌ Slow manual diagnosis across siloed systems
-- ❌ Delayed response times during off-hours (no one on-call)
-- ❌ Lost tribal knowledge when team members leave
+- ❌ Delayed response times during off-hours
+- ❌ Lost knowledge when team members leave
 - ❌ Manual runbook execution prone to human error
 - ❌ Burnout from constant firefighting
 
 **Traditional MTTR**: 45-90 minutes per incident  
-**With Azure Incident Resolver**: < 5 minutes
+**With ML solution**: < 5 minutes
 
 ---
 
@@ -197,16 +192,16 @@ The demo covers:
 
 ## 🛠️ Technologies Used
 
-### Hero Technologies (Hackathon Requirements)
-- ✅ **Azure MCP** - Model Context Protocol for agent communication via Service Bus
-- ✅ **Microsoft Agent Framework (Semantic Kernel)** - Multi-agent orchestration with SK plugins
-- ✅ **GitHub Copilot Agent Mode** - AI-powered code generation for fixes
-- ✅ **GitHub Models** - AI diagnosis via `gpt-4o-mini` (azure-ai-inference)
+### Core Technologies
+- **Azure MCP** - Model Context Protocol for agent communication
+- **Microsoft Agent Framework** - Multi-agent orchestration
+- **GitHub Copilot Agent Mode** - AI-powered code generation for fixes
+- **GitHub Models** - AI diagnosis via `gpt-4o-mini` (azure-ai-inference)
 
 ### Azure Services
 - **Azure Monitor** - Metrics and observability
 - **Application Insights** - Application telemetry
-- **Azure Service Bus** - Message queues for MCP
+- **Azure Service Bus** - Message queues for agent communication
 - **Azure App Service** - Hosting monitored applications
 - **Azure CLI** - Infrastructure management
 
@@ -237,7 +232,7 @@ Originally planned to use **Azure AI Foundry** for AI inference and RAG. Pivoted
 
 ### Scenario 1: Database Connection Pool Exhaustion
 **Incident**: Production database hits 100% connection pool utilization  
-**Impact**: API requests timing out, 5000+ users affected  
+**Impact**: API requests timing out, users affected  
 **Resolution**:
 - ✅ Detected in 10 seconds
 - ✅ Root cause identified: connection leak in API Gateway
@@ -251,7 +246,7 @@ Originally planned to use **Azure AI Foundry** for AI inference and RAG. Pivoted
 
 ### Scenario 2: Memory Leak
 **Incident**: Service memory usage at 95%, OOM imminent  
-**Impact**: Degraded performance, 8000+ users affected  
+**Impact**: Degraded performance, users affected  
 **Resolution**:
 - ✅ Memory leak detected via growth rate analysis
 - ✅ Service restarted automatically
@@ -264,7 +259,7 @@ Originally planned to use **Azure AI Foundry** for AI inference and RAG. Pivoted
 
 ### Scenario 3: API Rate Limit Breach
 **Incident**: Third-party API throttling, 42% error rate  
-**Impact**: Failed transactions, $5000/min revenue loss  
+**Impact**: Failed transactions, revenue loss  
 **Resolution**:
 - ✅ Rate limit pattern detected
 - ✅ Circuit breaker activated automatically
@@ -323,15 +318,18 @@ python src/orchestration/orchestrator.py --test
 
 ## 👥 Team
 
-- **Shaurya Singh** - https://innovationstudio.microsoft.com/user/ad6f374c-9563-4e45-9796-822acfcb04c8/hackathon_registrations
+- **Shaurya Singh** - Team Lead
+- **Pankhuri Shekhar** - ML Engineer
+- **Neelmani Sharan** - AI/ML Specialist
+- **Mukund Mishra** - DevOps Engineer
 
-*Built for Microsoft AI Dev Days Hackathon 2026*
+*ML Subject Submission*
 
 ---
 
 ## 🏷️ Keywords
 
-`azure` `ai-agents` `sre` `incident-management` `azure-mcp` `github-copilot` `devops` `automation` `multi-agent-system` `aiops` `incident-response` `azure-monitor` `anomaly-detection` `auto-remediation` `github-copilot-agent-mode` `microsoft-agent-framework`
+`machine-learning` `ai-agents` `incident-management` `automation` `multi-agent-system` `aiops` `incident-response` `anomaly-detection` `auto-remediation` `mcp` `azure-monitor` `python` `github-copilot`
 
 ---
 
@@ -343,7 +341,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Microsoft AI Dev Days team for the inspiration
+- ML course team for the project inspiration
 - Azure and GitHub Copilot documentation
 - Open source community
 
@@ -354,10 +352,9 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **GitHub Repository**: https://github.com/Waryjustice/azure-incident-resolver
 - **Live Dashboard**: https://incident-resolver-dashboard.azurewebsites.net
 - **Architecture Diagram**: [docs/architecture-diagram.svg](docs/architecture-diagram.svg)
-- **Hackathon**: [Microsoft AI Dev Days 2026](https://devdaysai.microsoft.com)
 
 ---
 
 **Built with ❤️ using Microsoft AI Platform**
 
-*Submission for Microsoft AI Dev Days Hackathon 2026 - Grand Prize Categories*
+*ML Subject Submission*

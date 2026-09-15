@@ -1,6 +1,6 @@
 # Demo Scenarios
 
-This directory contains demonstration scripts that showcase the Azure Incident Resolver's multi-agent system in action.
+This directory contains demonstration scripts showcasing the multi-agent AI system for ML subject submission.
 
 ## Available Demos
 

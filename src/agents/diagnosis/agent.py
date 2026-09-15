@@ -4,7 +4,7 @@ Diagnosis Agent - Analyzes incidents and determines root cause
 This agent:
 - Receives incident data from Detection Agent
 - Queries logs and metrics across systems
-- Uses GitHub Models AI (gpt-4o-mini) to identify root cause
+- Uses Google Gemini AI to identify root cause
 - Searches past incidents for patterns (in-memory RAG)
 - Sends diagnosis to Resolution Agent
 """
@@ -16,9 +16,10 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
-from azure.ai.inference import ChatCompletionsClient
-from azure.ai.inference.models import SystemMessage, UserMessage
-from azure.core.credentials import AzureKeyCredential
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 from azure.servicebus.aio import ServiceBusClient as AsyncServiceBusClient
 from azure.servicebus import ServiceBusMessage
 import asyncio
@@ -39,21 +40,21 @@ class DiagnosisAgent:
         self.timeout = int(os.getenv("DIAGNOSIS_TIMEOUT_SECONDS", 300))
         self._incident_history = []  # In-memory store for simple RAG
 
-        # GitHub Models AI client
-        github_token = os.getenv("GITHUB_TOKEN")
-        self.model_name = os.getenv("GITHUB_MODEL_NAME", "openai/gpt-4o-mini")
+        # Google Gemini AI client
+        gemini_api_key = os.getenv("GEMINI_API_KEY")
+        self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
         self._ai_client = None
-        if github_token:
+        if gemini_api_key and genai:
             try:
-                self._ai_client = ChatCompletionsClient(
-                    endpoint="https://models.inference.ai.azure.com",
-                    credential=AzureKeyCredential(github_token),
-                )
-                print(f"[Diagnosis Agent] ✅ GitHub Models AI client initialized ({self.model_name})")
+                genai.configure(api_key=gemini_api_key)
+                self._ai_client = genai.GenerativeModel(self.model_name)
+                print(f"[Diagnosis Agent] ✅ Google Gemini AI client initialized ({self.model_name})")
             except Exception as e:
-                print(f"[Diagnosis Agent] ⚠️  Could not initialize GitHub Models client: {e}")
+                print(f"[Diagnosis Agent] ⚠️  Could not initialize Gemini client: {e}")
+        elif not gemini_api_key:
+            print("[Diagnosis Agent] ⚠️  GEMINI_API_KEY not set — AI diagnosis unavailable")
         else:
-            print("[Diagnosis Agent] ⚠️  GITHUB_TOKEN not set — AI diagnosis unavailable")
+            print("[Diagnosis Agent] ⚠️  google-generativeai not installed — AI diagnosis unavailable")
 
         # Service Bus configuration
         self.servicebus_connection_string = os.getenv("AZURE_SERVICEBUS_CONNECTION_STRING")
@@ -173,21 +174,19 @@ class DiagnosisAgent:
         }
     
     async def determine_root_cause(self, incident, context, similar_incidents, log_analysis):
-        """Determine root cause using GitHub Models AI (gpt-4o-mini)"""
+        """Determine root cause using Google Gemini AI"""
         if self._ai_client:
             prompt = self._build_prompt(incident, context, similar_incidents, log_analysis)
             try:
                 response = await asyncio.to_thread(
-                    self._ai_client.complete,
-                    messages=[
-                        SystemMessage(content=_SYSTEM_PROMPT),
-                        UserMessage(content=prompt),
-                    ],
-                    model=self.model_name,
-                    temperature=0.2,
-                    max_tokens=400,
+                    self._ai_client.generate_content,
+                    prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0.2,
+                        max_output_tokens=400,
+                    ),
                 )
-                raw = response.choices[0].message.content.strip()
+                raw = response.text.strip()
                 # Strip markdown code fences if present (handles ```json, ```JSON, ``` etc.)
                 raw = re.sub(r'^```[a-zA-Z]*\n?', '', raw)
                 raw = re.sub(r'\n?```$', '', raw)

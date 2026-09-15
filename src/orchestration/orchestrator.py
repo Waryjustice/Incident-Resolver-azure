@@ -246,7 +246,7 @@ async def main():
     ║           Azure Incident Resolver                          ║
     ║           Multi-Agent SRE System                           ║
     ║                                                            ║
-    ║   Built for Microsoft AI Dev Days Hackathon 2026          ║
+    ║   ML Subject Submission                    ║
     ║                                                            ║
     ╚════════════════════════════════════════════════════════════╝
     """)
