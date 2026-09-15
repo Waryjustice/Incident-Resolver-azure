@@ -554,7 +554,7 @@ def trigger_demo_incident(scenario_type):
                         f"Resource: {resource['type']} '{resource['name']}'\n"
                         f"Anomaly: {anomaly['metric']} = {anomaly['value']} (threshold {anomaly['threshold']})\n"
                         f"Severity: {scenario['severity']}\n\n"
-                        "Respond with ONLY valid JSON:\n"
+                        "Respond with ONLY valid JSON in this exact format (no markdown, no code fences):\n"
                         '{"type":"snake_case","description":"one sentence","affected_component":"name",'
                         '"evidence":["point1","point2"]}'
                     )
@@ -564,7 +564,7 @@ def trigger_demo_incident(scenario_type):
                             prompt,
                             generation_config=genai.types.GenerationConfig(
                                 temperature=0.2,
-                                max_output_tokens=300,
+                                max_output_tokens=800,
                             ),
                         )
                         raw = resp.text.strip()

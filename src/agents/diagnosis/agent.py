@@ -183,7 +183,7 @@ class DiagnosisAgent:
                     prompt,
                     generation_config=genai.types.GenerationConfig(
                         temperature=0.2,
-                        max_output_tokens=400,
+                        max_output_tokens=1200,
                     ),
                 )
                 raw = response.text.strip()
@@ -221,7 +221,13 @@ ANOMALIES DETECTED:
 PEAK VALUES vs THRESHOLDS:
 {json.dumps(context.get('peak_values', {}), indent=2)}{similar_text}
 
-Based on this data, identify the root cause."""
+Based on this data, identify the root cause. Respond with ONLY valid JSON in this exact format (no markdown, no code fences):
+{{
+  "type": "snake_case_type",
+  "description": "Clear one-sentence description of the root cause",
+  "affected_component": "Component name",
+  "evidence": ["Evidence point 1", "Evidence point 2", "Evidence point 3"]
+}}"""
 
     def _rule_based_root_cause(self, incident):
         """Rule-based fallback when AI is unavailable"""
