@@ -196,7 +196,7 @@ The demo covers:
 - **Azure MCP** - Model Context Protocol for agent communication
 - **Microsoft Agent Framework** - Multi-agent orchestration
 - **GitHub Copilot Agent Mode** - AI-powered code generation for fixes
-- **GitHub Models** - AI diagnosis via `gpt-4o-mini` (azure-ai-inference)
+- **Google Gemini** - AI diagnosis via `gemini-1.5-flash` (google-generativeai)
 
 ### Azure Services
 - **Azure Monitor** - Metrics and observability
@@ -213,18 +213,18 @@ The demo covers:
 
 ---
 
-## 💡 Design Decision: GitHub Models over Azure AI Foundry
+## 💡 Design Decision: Google Gemini over Azure AI Foundry
 
-Originally planned to use **Azure AI Foundry** for AI inference and RAG. Pivoted to **GitHub Models API** because:
+Originally planned to use **Azure AI Foundry** for AI inference and RAG. Pivoted to **Google Gemini API** because:
 
 - Azure student accounts cannot create Foundry model deployments in all regions (region quota restrictions)
-- GitHub Models provides the **same `gpt-4o-mini` model** at zero cost using only a GitHub token
-- The API is identical — same `ChatCompletionsClient` from `azure-ai-inference` SDK, same endpoint pattern
-- Zero extra infrastructure — no Foundry workspace or deployment to configure
+- Google Gemini provides **generous free tier** with `gemini-1.5-flash` model
+- The `google-generativeai` SDK is lightweight and easy to integrate
+- Zero extra Azure infrastructure — no Foundry workspace or deployment to configure
 
-> The `FOUNDRY_ENDPOINT` and `FOUNDRY_API_KEY` variables exist in `.env.example` for completeness  
-> but the system does **not** call Foundry at runtime. All AI inference goes through  
-> `https://models.inference.ai.azure.com` authenticated with `GITHUB_TOKEN`.
+> The `FOUNDRY_ENDPOINT` and `FOUNDRY_API_KEY` variables exist in `.env.example` for completeness
+> but the system does **not** call Foundry at runtime. All AI inference goes through
+> Google Gemini API authenticated with `GEMINI_API_KEY`.
 
 ---
 

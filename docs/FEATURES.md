@@ -10,26 +10,26 @@ Azure Incident Resolver is an autonomous, multi-agent SRE (Site Reliability Engi
 
 ```
 Azure Monitor
-     │
-     ▼
+      │
+      ▼
 ┌─────────────────┐     Service Bus Queue        ┌─────────────────────┐
 │ Detection Agent │ ─── detection-to-diagnosis ──▶│  Diagnosis Agent    │
-│                 │                               │  (GitHub Models AI) │
+│                 │                               │  (Google Gemini AI) │
 └─────────────────┘                               └──────────┬──────────┘
-                                                             │ Service Bus Queue
-                                                             │ diagnosis-to-resolution
-                                                             ▼
-                                                  ┌─────────────────────┐
-                                                  │  Resolution Agent   │
-                                                  │  (GitHub Copilot)   │
-                                                  └──────────┬──────────┘
-                                                             │ Service Bus Queue
-                                                             │ resolution-to-communication
-                                                             ▼
-                                                  ┌─────────────────────┐
-                                                  │ Communication Agent │
-                                                  │  (Post-mortems)     │
-                                                  └─────────────────────┘
+                                                              │ Service Bus Queue
+                                                              │ diagnosis-to-resolution
+                                                              ▼
+                                                   ┌─────────────────────┐
+                                                   │  Resolution Agent   │
+                                                   │  (GitHub Copilot)   │
+                                                   └──────────┬──────────┘
+                                                              │ Service Bus Queue
+                                                              │ resolution-to-communication
+                                                              ▼
+                                                   ┌─────────────────────┐
+                                                   │ Communication Agent │
+                                                   │  (Post-mortems)     │
+                                                   └─────────────────────┘
 ```
 
 All inter-agent communication flows through **Azure Service Bus** queues. The orchestrator can also run all agents in-process using **Microsoft Semantic Kernel** plugins for demo and testing.
@@ -71,13 +71,13 @@ Continuously polls Azure Monitor (Log Analytics) for anomalies in a monitored Az
 
 ### 2. Diagnosis Agent (`src/agents/diagnosis/agent.py`)
 
-Receives incidents from the Detection Agent, gathers context, calls GitHub Models AI (GPT-4o-mini) to identify the root cause, and forwards a structured diagnosis.
+Receives incidents from the Detection Agent, gathers context, calls Google Gemini AI (gemini-1.5-flash) to identify the root cause, and forwards a structured diagnosis.
 
 | Feature | Status |
 |---------|--------|
 | Receives incident from Service Bus queue | ✅ Real |
 | Builds structured context from anomaly data | ✅ Real |
-| Calls GitHub Models AI (GPT-4o-mini via `azure-ai-inference` SDK) | ✅ Real |
+| Calls Google Gemini AI (gemini-1.5-flash via `google-generativeai` SDK) | ✅ Real |
 | AI returns root cause type, description, component, and evidence | ✅ Real |
 | In-memory RAG: searches past incidents for similar patterns | ✅ Real |
 | Rule-based fallback when AI is unavailable | ✅ Real |
@@ -198,7 +198,7 @@ When running via the orchestrator, agents are invoked directly as function calls
 - Azure App Service restart (`WebSiteManagementClient`)
 - Azure App Service circuit breaker settings update
 - Azure App Service deployment slot swap (rollback)
-- GitHub Models AI inference (GPT-4o-mini via `azure-ai-inference` SDK)
+- Google Gemini AI inference (gemini-1.5-flash via `google-generativeai` SDK)
 - GitHub PR creation with automated fix (via `PyGithub`)
 - GitHub Copilot CLI code suggestion (`gh copilot suggest`)
 - Azure Service Bus queue connectivity and message persistence
@@ -277,7 +277,7 @@ python src/orchestration/orchestrator.py
 | Variable | Used By | Required For |
 |----------|---------|-------------|
 | `AZURE_SERVICEBUS_CONNECTION_STRING` | All agents | Service Bus messaging (distributed mode) |
-| `GITHUB_TOKEN` | Diagnosis, Resolution | AI diagnosis (GitHub Models) + PR creation |
+| `GITHUB_TOKEN` | Resolution | PR creation |
 | `AZURE_SUBSCRIPTION_ID` | Resolution | Azure resource management (fixes) |
 | `AZURE_RESOURCE_GROUP` | Resolution | Azure resource management (fixes) |
 | `AZURE_MONITOR_WORKSPACE_ID` | Detection | Real Azure Monitor queries |
@@ -286,7 +286,8 @@ python src/orchestration/orchestrator.py
 | `AZURE_SQL_DATABASE` | Resolution | Database scaling fix |
 | `GITHUB_REPO_OWNER` | Resolution | PR creation |
 | `GITHUB_REPO_NAME` | Resolution | PR creation |
-| `GITHUB_MODEL_NAME` | Diagnosis | AI model selection (default: `gpt-4o-mini`) |
+| `GEMINI_API_KEY` | Diagnosis | AI diagnosis (Google Gemini) |
+| `GEMINI_MODEL_NAME` | Diagnosis | AI model selection (default: `gemini-1.5-flash`) |
 
 > Copy `.env.example` to `.env` and fill in your values. Never commit `.env` to Git.
 
@@ -313,9 +314,9 @@ python src/orchestration/orchestrator.py
 | **Azure Service Bus** | Async message queue between agents |
 | **Azure Monitor / Log Analytics** | Real-time metric queries (KQL) |
 | **Azure Management SDK** | Execute fixes on Azure resources |
-| **GitHub Models (GPT-4o-mini)** | AI-powered root cause analysis |
+| **Google Gemini (gemini-1.5-flash)** | AI-powered root cause analysis |
 | **GitHub Copilot CLI** | Code fix generation |
 | **PyGithub** | Automated PR creation |
 | **Microsoft Semantic Kernel** | Agent orchestration and plugin system |
-| **Python `azure-ai-inference`** | GitHub Models API client |
+| **Python `google-generativeai`** | Google Gemini API client |
 | **`python-dotenv`** | Environment variable management |

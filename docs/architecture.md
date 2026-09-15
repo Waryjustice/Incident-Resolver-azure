@@ -31,7 +31,7 @@ Azure Incident Resolver is a multi-agent system that automates incident detectio
 ┌─────────────────────────────────────────────────────────────────┐
 │                    DIAGNOSIS AGENT                               │
 │  • Analyzes logs and metrics                                     │
-│  • GitHub Models AI (gpt-4o-mini) root cause analysis            │
+│  • Google Gemini AI (gemini-1.5-flash) root cause analysis       │
 │  • Identifies root cause                                         │
 └────────────────┬────────────────────────────────────────────────┘
                  │
@@ -77,7 +77,7 @@ Resolution Agent ──[resolution_complete]──> Communication Agent
 ## Technology Stack
 
 ### Core Technologies
-- **GitHub Models API (gpt-4o-mini)**: AI diagnosis via `azure-ai-inference` SDK — uses GITHUB_TOKEN, no Foundry required
+- **Google Gemini API (gemini-1.5-flash)**: AI diagnosis via `google-generativeai` SDK — uses GEMINI_API_KEY
 - **Microsoft Agent Framework**: Multi-agent orchestration
 - **Azure MCP**: Inter-agent communication protocol
 - **GitHub Copilot Agent Mode**: Automated code generation
@@ -107,7 +107,7 @@ Resolution Agent ──[resolution_complete]──> Communication Agent
    - Incident data sent to Diagnosis Agent via Azure MCP
    - Agent queries logs from Application Insights
    - In-memory RAG searches last 20 past incidents for similar patterns
-   - GitHub Models (gpt-4o-mini) via azure-ai-inference analyzes data for root cause
+   - Google Gemini (gemini-1.5-flash) via google-generativeai analyzes data for root cause
 
 3. **Resolution Phase**
    - Diagnosis sent to Resolution Agent

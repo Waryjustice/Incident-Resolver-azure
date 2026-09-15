@@ -85,17 +85,16 @@ This script creates:
 - Azure Container Registry
 - Azure Database for incident storage
 
-### Step 2: Configure GitHub Models AI
+### Step 2: Configure Google Gemini AI
 
-The diagnosis agent uses **GitHub Models** (`gpt-4o-mini`) via the `azure-ai-inference` SDK.
-No Azure AI Foundry instance is required — authentication is handled by your GitHub token.
+The diagnosis agent uses **Google Gemini** (`gemini-1.5-flash`) via the `google-generativeai` SDK.
+No Azure AI Foundry instance is required — authentication is handled by your Gemini API key.
 
 ```bash
-# Add your GitHub Personal Access Token to .env
-# The same token used for GitHub PR creation also authenticates GitHub Models.
-# Endpoint (hardcoded in diagnosis agent): https://models.inference.ai.azure.com
-echo "GITHUB_TOKEN=ghp_your_token_here" >> .env
-echo "GITHUB_MODEL_NAME=gpt-4o-mini" >> .env
+# Add your Google Gemini API Key to .env
+# Get API key from: https://makersuite.google.com/app/apikey
+echo "GEMINI_API_KEY=your_gemini_api_key_here" >> .env
+echo "GEMINI_MODEL_NAME=gemini-1.5-flash" >> .env
 ```
 
 ### Step 3: Setup GitHub Integration
@@ -291,15 +290,14 @@ kubectl exec -it deployment/resolution-agent -- \
   curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user
 ```
 
-### GitHub Models errors
+### Google Gemini errors
 
 ```bash
-# Check that GITHUB_TOKEN is set and has models:read permission
-curl -H "Authorization: Bearer $GITHUB_TOKEN" \
-  https://models.inference.ai.azure.com/info
+# Check that GEMINI_API_KEY is set and valid
+python -c "import google.generativeai as genai; genai.configure(api_key='$GEMINI_API_KEY'); print(genai.GenerativeModel('gemini-1.5-flash').generate_content('test').text[:50])"
 
 # Verify model name is correct (must match a supported model)
-# Default: gpt-4o-mini  — set via GITHUB_MODEL_NAME in .env
+# Default: gemini-1.5-flash  — set via GEMINI_MODEL_NAME in .env
 ```
 
 ## Scaling
