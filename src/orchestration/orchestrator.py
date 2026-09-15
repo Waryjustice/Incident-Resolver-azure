@@ -1,0 +1,296 @@
+"""
+Multi-Agent Orchestrator - Coordinates all agents in the system
+
+This orchestrator:
+- Manages agent lifecycle and communication
+- Routes incidents between agents
+- Implements Azure MCP for agent-to-agent communication
+- Maintains incident state
+- Provides monitoring and observability
+"""
+
+import asyncio
+import json
+from datetime import datetime
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from agents.detection.agent import DetectionAgent
+from agents.diagnosis.agent import DiagnosisAgent
+from agents.resolution.agent import ResolutionAgent
+from agents.communication.agent import CommunicationAgent
+from semantic_kernel import Kernel
+from semantic_kernel.functions import kernel_function
+
+
+class _DiagnosisPlugin:
+    """Semantic Kernel plugin — AI-powered root cause analysis."""
+    def __init__(self, agent: DiagnosisAgent):
+        self._agent = agent
+
+    @kernel_function(name="diagnose", description="Analyze an incident and identify root cause using AI")
+    async def diagnose(self, incident_json: str) -> str:
+        result = await self._agent.diagnose_incident(json.loads(incident_json))
+        return json.dumps(result) if result else "{}"
+
+
+class _ResolutionPlugin:
+    """Semantic Kernel plugin — automated incident remediation."""
+    def __init__(self, agent: ResolutionAgent):
+        self._agent = agent
+
+    @kernel_function(name="resolve", description="Execute automated remediation for a diagnosed incident")
+    async def resolve(self, diagnosis_json: str) -> str:
+        result = await self._agent.resolve_incident(json.loads(diagnosis_json))
+        return json.dumps(result) if result else "{}"
+
+
+class _CommunicationPlugin:
+    """Semantic Kernel plugin — stakeholder notifications and post-mortems."""
+    def __init__(self, agent: CommunicationAgent):
+        self._agent = agent
+
+    @kernel_function(name="notify", description="Send notifications for incident lifecycle events")
+    async def notify(self, incident_json: str) -> str:
+        await self._agent.handle_incident_lifecycle(json.loads(incident_json))
+        return "ok"
+
+    @kernel_function(name="post_mortem", description="Generate a post-mortem report for a resolved incident")
+    async def post_mortem(self, incident_json: str) -> str:
+        result = await self._agent.generate_post_mortem(json.loads(incident_json))
+        return json.dumps(result) if result else "{}"
+
+
+class IncidentOrchestrator:
+    def __init__(self):
+        # Initialize all agents
+        self.detection_agent = DetectionAgent()
+        self.diagnosis_agent = DiagnosisAgent()
+        self.resolution_agent = ResolutionAgent()
+        self.communication_agent = CommunicationAgent()
+
+        # Register agents as Semantic Kernel plugins
+        self.kernel = Kernel()
+        self.kernel.add_plugin(_DiagnosisPlugin(self.diagnosis_agent), plugin_name="DiagnosisAgent")
+        self.kernel.add_plugin(_ResolutionPlugin(self.resolution_agent), plugin_name="ResolutionAgent")
+        self.kernel.add_plugin(_CommunicationPlugin(self.communication_agent), plugin_name="CommunicationAgent")
+
+        # Incident state management
+        self.active_incidents = {}
+        self.incident_history = []
+        
+        print("[Orchestrator] ** Azure Incident Resolver initialized")
+        print("[Orchestrator] ** Semantic Kernel initialized — agents registered as plugins")
+        print("[Orchestrator] All agents ready")
+    
+    async def start(self):
+        """Start the orchestration system"""
+        print("[Orchestrator] Starting incident monitoring...")
+        
+        # Start detection agent monitoring in background
+        detection_task = asyncio.create_task(self._run_detection_loop())
+        
+        # Keep the system running
+        await detection_task
+    
+    async def _run_detection_loop(self):
+        """Run continuous detection monitoring, routing anomalies into the full incident pipeline"""
+        while True:
+            try:
+                if not self.detection_agent.monitored_webapp_id:
+                    print("[Orchestrator] ** MONITORED_WEBAPP_ID not set — skipping detection")
+                    await asyncio.sleep(self.detection_agent.monitoring_interval)
+                    continue
+
+                resource = {
+                    "type": "WebApp",
+                    "id": self.detection_agent.monitored_webapp_id,
+                    "name": "Azure Web App"
+                }
+
+                anomalies = await self.detection_agent.detect_anomalies(resource)
+
+                if anomalies:
+                    print("[Orchestrator] ** " + str(len(anomalies)) + " anomalies detected — starting incident pipeline")
+                    incident = {
+                        "id": "INC-" + datetime.utcnow().strftime('%Y%m%d%H%M%S'),
+                        "resource": resource,
+                        "anomalies": anomalies,
+                        "detected_at": datetime.utcnow().isoformat(),
+                        "severity": self.detection_agent._calculate_severity(anomalies)
+                    }
+                    # Route directly into the orchestrated pipeline (in-process)
+                    await self.handle_incident(incident)
+                else:
+                    print("[Orchestrator] ** No anomalies detected")
+
+                await asyncio.sleep(self.detection_agent.monitoring_interval)
+
+            except Exception as e:
+                print("[Orchestrator] Error in detection loop: " + str(e))
+                await asyncio.sleep(60)
+    
+    async def handle_incident(self, incident):
+        """
+        Main incident handling workflow
+        Coordinates all agents to detect → diagnose → resolve → communicate
+        """
+        incident_id = incident["id"]
+        self.active_incidents[incident_id] = incident
+        
+        print("\n" + "="*60)
+        print("[Orchestrator] ** INCIDENT WORKFLOW STARTED: " + incident_id)
+        print("="*60 + "\n")
+        
+        try:
+            # Phase 1: Detection (already done, notify stakeholders)
+            print("[Orchestrator] Phase 1/4: Detection")
+            incident["phase"] = "detected"
+            notify_fn = self.kernel.get_function("CommunicationAgent", "notify")
+            await self.kernel.invoke(notify_fn, incident_json=json.dumps(incident, default=str))
+            
+            # Phase 2: Diagnosis
+            print("\n[Orchestrator] Phase 2/4: Diagnosis")
+            diagnose_fn = self.kernel.get_function("DiagnosisAgent", "diagnose")
+            result = await self.kernel.invoke(diagnose_fn, incident_json=json.dumps(incident, default=str))
+            diagnosis = json.loads(str(result)) if str(result) and str(result) != "{}" else None
+            
+            if not diagnosis:
+                print("[Orchestrator] ** Diagnosis failed - escalating")
+                await self._handle_failure(incident, "diagnosis_failed")
+                return
+            
+            incident["diagnosis"] = diagnosis
+            diagnosis["phase"] = "diagnosed"
+            await self.kernel.invoke(notify_fn, incident_json=json.dumps(diagnosis, default=str))
+            
+            # Phase 3: Resolution
+            print("\n[Orchestrator] Phase 3/4: Resolution")
+            resolve_fn = self.kernel.get_function("ResolutionAgent", "resolve")
+            result = await self.kernel.invoke(resolve_fn, diagnosis_json=json.dumps(diagnosis, default=str))
+            resolution = json.loads(str(result)) if str(result) and str(result) != "{}" else None
+            
+            if not resolution or resolution["status"] != "resolved":
+                print("[Orchestrator] ** Resolution failed - escalating")
+                await self._handle_failure(incident, "resolution_failed")
+                return
+            
+            incident["resolution"] = resolution
+            resolution["phase"] = "resolved"
+            await self.kernel.invoke(notify_fn, incident_json=json.dumps(resolution, default=str))
+            
+            # Phase 4: Post-incident communication
+            print("\n[Orchestrator] Phase 4/4: Post-Incident Communication")
+            post_mortem_fn = self.kernel.get_function("CommunicationAgent", "post_mortem")
+            await self.kernel.invoke(post_mortem_fn, incident_json=json.dumps(incident, default=str))
+            
+            # Move to history
+            incident["completed_at"] = datetime.utcnow().isoformat()
+            incident["status"] = "resolved"
+            self.incident_history.append(incident)
+            del self.active_incidents[incident_id]
+            
+            print("\n" + "="*60)
+            print("[Orchestrator] ** INCIDENT WORKFLOW COMPLETED: " + incident_id)
+            print("="*60 + "\n")
+            
+        except Exception as e:
+            print("[Orchestrator] ** Unexpected error: " + str(e))
+            await self._handle_failure(incident, "unexpected_error: " + str(e))
+    
+    async def _handle_failure(self, incident, reason):
+        """Handle workflow failures"""
+        incident["status"] = "failed"
+        incident["failure_reason"] = reason
+        incident["phase"] = "failed"
+        
+        # Escalate to on-call
+        await self.communication_agent.escalate_to_oncall(incident)
+        
+        # Move to history
+        self.incident_history.append(incident)
+        if incident["id"] in self.active_incidents:
+            del self.active_incidents[incident["id"]]
+    
+    def get_active_incidents(self):
+        """Get list of currently active incidents"""
+        return list(self.active_incidents.values())
+    
+    def get_incident_history(self, limit=10):
+        """Get recent incident history"""
+        return self.incident_history[-limit:]
+    
+    def get_system_stats(self):
+        """Get system statistics"""
+        total_incidents = len(self.incident_history) + len(self.active_incidents)
+        resolved_incidents = len([i for i in self.incident_history if i.get("status") == "resolved"])
+        
+        return {
+            "active_incidents": len(self.active_incidents),
+            "total_incidents": total_incidents,
+            "resolved_incidents": resolved_incidents,
+            "resolution_rate": (resolved_incidents / total_incidents * 100) if total_incidents > 0 else 0,
+            "uptime": "Running"
+        }
+
+
+# Main execution
+async def main():
+    """Main entry point"""
+    print("""
+Azure Incident Resolver - Multi-Agent SRE System
+
+Built for Microsoft AI Dev Days Hackathon 2026""")
+    
+    orchestrator = IncidentOrchestrator()
+    
+    # For testing: simulate an incident
+    # In production, this would be triggered by the detection agent
+    test_mode = os.getenv("TEST_MODE", "false").lower() == "true"
+    
+    if test_mode:
+        print("\n** TEST MODE ** Simulating incident in 5 seconds...\n")
+        await asyncio.sleep(5)
+        
+        test_incident = {
+            "id": "INC-" + datetime.utcnow().strftime('%Y%m%d%H%M%S'),
+            "resource": {
+                "type": "Database",
+                "id": "db-prod-001",
+                "name": "Production Database"
+            },
+            "anomalies": [
+                {
+                    "metric": "CONNECTION_COUNT",
+                    "value": 500,
+                    "threshold": 100,
+                    "severity": "high"
+                }
+            ],
+            "detected_at": datetime.utcnow().isoformat(),
+            "severity": "high"
+        }
+        
+        await orchestrator.handle_incident(test_incident)
+        
+        # Show stats
+        stats = orchestrator.get_system_stats()
+        print("\n\nSystem Statistics:")
+        print("  Active Incidents: " + str(stats['active_incidents']))
+        print("  Total Incidents: " + str(stats['total_incidents']))
+        print("  Resolved: " + str(stats['resolved_incidents']))
+        print("  Resolution Rate: " + str(stats['resolution_rate']) + "%")
+    else:
+        # Start continuous monitoring
+        await orchestrator.start()
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n\n** Shutting down gracefully...")
+        print("[Orchestrator] Goodbye! 👋")
